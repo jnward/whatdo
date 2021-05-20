@@ -2,8 +2,12 @@ import React from 'react';
 import {View,Text} from 'react-native';
 import Home from './screens/Home';
 
-const Application = () => (
-    <Home/>
-);
+export default function Application(props) {
 
-export default Application;
+    const theme = props.theme;
+    const setTheme = props.setTheme;
+    
+    return(
+        <Home theme={theme} setTheme={setTheme}/>
+    );    
+};

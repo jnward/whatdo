@@ -1,12 +1,14 @@
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Application from './src';
 
 export default function App() {
+    const [theme, setTheme] = useState('light');
+
     return (
         <View style={styles.container}>
-            <Application/>
+            <Application theme={theme} setTheme={setTheme}/>
             <StatusBar style="auto" />
         </View>
     );

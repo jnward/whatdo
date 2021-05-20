@@ -5,6 +5,9 @@ import * as Notifications from 'expo-notifications';
 import * as SQLite from 'expo-sqlite';
 
 import LogConsole from './components/LogConsole';
+import Log from './components/Log';
+
+import { styles } from '../../styles';
 // TODO: ask perms for notifs
 
 const EARLIEST_HOUR = 10;
@@ -177,7 +180,10 @@ async function scheduleNewNotifications() {
 // AppState.addEventListener("change", _handleAppStateChange);
 
 
-export default function Home() {
+export default function Home(props) {
+    const theme = props.theme;
+    const setTheme = props.setTheme;
+    const style = styles[props.theme];
     const [message, setMessage] = useState('init');
     const [logs, setLogs] = useState([]);
     // const [logText, setLogText] = useState('');
@@ -199,7 +205,7 @@ export default function Home() {
         for (let i = 0; i < res.rows.length; i++) {
             const row = res.rows.item(i);
             console.log(row);
-            const newLog = <Log key={row.id} body={row.body} timestamp={row.timestamp}/>;
+            const newLog = <Log key={row.id} body={row.body} timestamp={row.timestamp} theme={theme}/>;
             newLogs.push(newLog);
         }
         console.log("NEWLOGS: ", newLogs)
@@ -215,54 +221,57 @@ export default function Home() {
 
     // handleAppOpen();
 
-    const testString = Array(100).join('ABCDEFGHIJKLMNOP');
+    console.log(theme);
 
     return (
-        <View style={{flex:1}}>
-        <KeyboardAvoidingView
-            behavior='padding'
-            style={{ borderColor: 'green', borderWidth: 5, flex: 1 }}
-        >
-{/*            <TextInput
-                style={styles.input}
-                onChangeText={setLogText}
-                onSubmitEditing={() => {
-                    insertLog(logText);
-                    _getLogData();
-                    setLogText('');
-                }}
-                value={logText}
-            />*/}
-            <View style={styles.header}></View>
-            <View style={{ flex: 1, backgroundColor: 'yellow' }}>
-                <ScrollView>
-                    <Text>{testString}</Text>
-                    <LogContainer logs={logs}/>
-                </ScrollView>
-
-            </View>
-            <View style={{backgroundColor: 'orange' }}>
-                <Text>You've made it home.</Text>
-                <Button
-                    onPress={test}
-                    title='Log notifications'
-                    color='blue'
-                />
-                <Text>{message}</Text>
-                <AppStateExample setMessage={ setMessage }/>
-                
-    {/*            <Button
-                    onPress={ _getLogData }
-                    title="Press me!"
+        <View style={{ flex:1, width: '100%' }}>
+            <KeyboardAvoidingView
+                behavior='padding'
+                style={{ flex: 1 }}
+            >
+    {/*            <TextInput
+                    style={styles.input}
+                    onChangeText={setLogText}
+                    onSubmitEditing={() => {
+                        insertLog(logText);
+                        _getLogData();
+                        setLogText('');
+                    }}
+                    value={logText}
                 />*/}
-    {/*            <Button
-                    onPress={() => {insertLog(logText)}}
-                    title="Make new log"
-                />*/}
+                <View style={[style.header, local.header, {justifyContent: 'center'}]}>
+                    <Button
+                        title='change'
+                        onPress={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                    />
+                </View>
+                <View style={[style.container, local.container]}>
+                    <ScrollView>
+                        <LogContainer logs={logs}/>
+                    </ScrollView>
+                </View>
+                <View style={[style.console]}>
+                    <Text>You've made it home.</Text>
+                    <Button
+                        onPress={test}
+                        title='Log notifications'
+                        color='blue'
+                    />
+                    <Text>{message}</Text>
+                    <AppStateExample setMessage={ setMessage }/>
+                    
+        {/*            <Button
+                        onPress={ _getLogData }
+                        title="Press me!"
+                    />*/}
+        {/*            <Button
+                        onPress={() => {insertLog(logText)}}
+                        title="Make new log"
+                    />*/}
 
-                <LogConsole handleNewLog={ _newLog }/>
-            </View>
-        </KeyboardAvoidingView>
+                    <LogConsole handleNewLog={ _newLog }/>
+                </View>
+            </KeyboardAvoidingView>
         </View>
     );
 }
@@ -283,13 +292,7 @@ const LogContainer = (props) => {
 }
 
 
-const Log = (props) => {
-    const body = props.body;
-    const timestamp = props.timestamp;
-    return (
-        <Text>{body} ... {timestamp}</Text>
-    );
-}
+
 
 
 const AppStateExample = (props) => {
@@ -341,21 +344,16 @@ const AppStateExample = (props) => {
     return null;
 }
 
-const styles = StyleSheet.create({
-  container: {
-    justifyContent: "center",
-    // alignItems: "center",
-    top: 0,
-    marginTop: 0,
-    paddingTop: 0,
-    flex: 1,
-  },
-  input: {
-    height: 40,
-    margin: 12,
-    borderWidth: 1,
-  },
-  header: {
-      height: 100,
-  }
-});
+const local = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    input: {
+        height: 40,
+        margin: 12,
+        borderWidth: 1,
+    },
+    header: {
+        height: 100,
+    }
+})  ;
