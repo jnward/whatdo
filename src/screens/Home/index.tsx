@@ -240,17 +240,7 @@ export default function Home(props) {
                     value={logText}
                 />*/}
                 <View style={[style.header, local.header, {justifyContent: 'center'}]}>
-                    <Button
-                        title='change'
-                        onPress={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                    />
-                </View>
-                <View style={[style.container, local.container]}>
-                    <ScrollView>
-                        <LogContainer logs={logs}/>
-                    </ScrollView>
-                </View>
-                <View style={[style.console]}>
+                    <View style={{height: 40}}/>
                     <Text>You've made it home.</Text>
                     <Button
                         onPress={test}
@@ -259,6 +249,19 @@ export default function Home(props) {
                     />
                     <Text>{message}</Text>
                     <AppStateExample setMessage={ setMessage }/>
+                    <Button
+                        title='change'
+                        onPress={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                    />
+                </View>
+                <View style={[style.container, local.container]}>
+                    <ScrollView>
+                        <LogContainer logs={logs}/>
+                        <View style={{height: 21.5}}/>
+                    </ScrollView>
+                </View>
+                <View style={[style.console]}>
+                    
                     
         {/*            <Button
                         onPress={ _getLogData }
@@ -354,6 +357,5 @@ const local = StyleSheet.create({
         borderWidth: 1,
     },
     header: {
-        height: 100,
     }
 })  ;

@@ -24,11 +24,11 @@ export default function Log(props) {
 
 const local = StyleSheet.create({
 	log: {
-		borderWidth: 3.5,
+		borderWidth: 3,
 		borderRadius: 20,
 		minHeight: 40,
-		right: 2.5,
-		bottom: 3.5,
+		right: 2,
+		bottom: 3,
 		// shadowColor: '#000000',
 		// shadowRadius: 10,
 		// shadowOpacity: 0.3,
@@ -52,8 +52,8 @@ const local = StyleSheet.create({
 		borderRadius: 20,
 		minHeight: 40,
 		marginHorizontal: 18,
-		left: 2.5,
-		top: 3.5,
+		left: 2,
+		top: 3,
 	}
 
 });

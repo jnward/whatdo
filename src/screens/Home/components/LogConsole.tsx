@@ -21,6 +21,7 @@ export default function LogConsole(props) {
                 value={newLogText}
                 placeholder={'What have you been up to?'}
                 placeholderTextColor="#B1B1B1"
+                enablesReturnKeyAutomatically
             />
             </View>
             </View>
@@ -55,12 +56,12 @@ const styles = StyleSheet.create({
     },
     inputShadow: {
         backgroundColor: '#fff',
-        height: 32.5,
-        marginLeft: 1.5,
-        top: 3.5,
-        borderTopLeftRadius: 18,
-        borderTopRightRadius: 14.5,
-        borderBottomLeftRadius: 18,
+        height: 33,
+        marginLeft: 1,
+        top: 3,
+        borderTopLeftRadius: 16.5,
+        borderTopRightRadius: 15,
+        borderBottomLeftRadius: 16.5,
         borderBottomRightRadius: 18,
     },
 });
