@@ -79,6 +79,12 @@ function schedule2SecondNote() {
     })
 }
 
+function insertLogYesterday() {
+    const createLog =
+        "insert into log (body, timestamp) values ('test', datetime('now', '-1 day'));";
+    executeQuery(createLog, []);
+}
+
 function init() {
 
     // Notification handler if user recieves a note while in app
@@ -193,16 +199,24 @@ async function checkNotifiedToday() {
 }
 
 
-function checkLoggedToday() {
-    const q = "SELECT * FROM log ORDER BY timestamp DESC LIMIT 1;"
-    db.transaction(
-        tx => { tx.executeSql(
-            q,
-            [],
-            (tx, res) => {  },
-            (tx, res) => { console.log(res); return true; }
-        ); }
-    );
+function getLastLog() {
+    //const q = "SELECT strftime('%s', timestamp) as unixtime FROM log ORDER BY timestamp DESC LIMIT 1;"
+    const q = "SELECT id FROM log WHERE timestamp >= date('now', 'start of day') AND timestamp < date('now', 'start of day', '+1 day');"
+    return new Promise(resolve => {
+        db.transaction(
+            tx => { tx.executeSql(
+                q,
+                [],
+                (tx, res) => { resolve(res.rows) },
+                (tx, res) => { console.log(res); return true; }
+            ); }
+        );
+    });
+}
+
+async function checkLoggedToday() {
+    const rows = await getLastLog();
+    return rows.length > 0;
 }
 
 
@@ -371,6 +385,11 @@ export default function Home(props) {
                         title='Clear all notes'
                         color='red'
                     />
+                    <Button
+                        onPress={insertLogYesterday}
+                        title='Add log from yesterday'
+                        color='green'
+                    />
                     <Text>{JSON.stringify(readyState)}</Text>
                     <AppStateLogic setReadyState={ setReadyState }/>
 {/*                    <Button
@@ -473,7 +492,7 @@ const AppStateLogic = (props) => {
         //const newMessage = notifiedToday ? "Recieved notification today!" : "Still waiting ...";
         const newReadyState = {
             note: notifiedToday,
-            log: loggedToday || true,
+            log: loggedToday,
         };
         
         console.log(newReadyState);
