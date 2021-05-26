@@ -8,13 +8,14 @@ export default function Log(props) {
     const timestamp = props.timestamp;
     const theme = props.theme;
     const style = styles[theme];
+    console.log(props.id);
     return (
     	<View style={{marginTop: 4}}>
-	        <Text style={local.logTimestamp}>{timestamp}</Text>
+	        <Text style={[local.logTimestamp, style.logBody]}>{timestamp}</Text>
 	        <View style={local.logArea}>
-	        	<View style={local.logShadow}>
+	        	<View style={[local.logShadow, style.logShadow]}>
 			    	<View style={[local.log, style.log]}>
-			        	<Text style={local.logBody}>{body}</Text>
+			        	<Text style={[local.logBody, style.logBody]}>{body}</Text>
 			        </View>
 		    	</View>
 		    </View>
@@ -48,7 +49,6 @@ const local = StyleSheet.create({
 		paddingVertical: 6,
 	},
 	logShadow: {
-		backgroundColor: '#0000004D',
 		borderRadius: 20,
 		minHeight: 40,
 		marginHorizontal: 18,

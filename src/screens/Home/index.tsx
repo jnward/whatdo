@@ -1,10 +1,15 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, KeyboardAvoidingView, ScrollView, Text, TextInput, Button, AppState, AppStateStatus, AppStateStatic, StyleSheet } from 'react-native';
+import { View, KeyboardAvoidingView, ScrollView, SafeAreaView, Text, TextInput, Button, AppState, AppStateStatus, AppStateStatic, StyleSheet } from 'react-native';
+
+import { LinearGradient } from 'expo-linear-gradient';
 
 import * as Notifications from 'expo-notifications';
 import * as SQLite from 'expo-sqlite';
 
+import { useIsFocused } from '@react-navigation/native';
+
 import LogConsole from './components/LogConsole';
+import LogContainer from './components/LogContainer';
 import Log from './components/Log';
 
 import { styles } from '../../styles';
@@ -14,6 +19,65 @@ const EARLIEST_HOUR = 10;
 const LATEST_HOUR = 22;
 
 const db = SQLite.openDatabase('whatdo');
+
+
+function sendNote() {
+    console.log('sending note!');
+    Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'test',
+          body: "test",
+        },
+        trigger: null,
+      });
+}
+
+function scheduleOldNote() {
+    const today = new Date();
+    const weekday = today.getDay() + 1;
+    const hour = today.getHours();
+    const minute = today.getMinutes();
+    const newMinute = (minute - 1) % 60;
+    const newHour = minute ? hour : hour - 1;
+    console.log(`Scheduling weekly note one minute ago for ${newHour} ${newMinute}`);
+    Notifications.scheduleNotificationAsync({
+        content: {
+            title: 'test',
+            body: 'Scheduled for one minute ago',
+        },
+        trigger: {
+            weekday: weekday,
+            hour: newHour,
+            minute: newMinute,
+            repeats: true,
+        }
+    })
+}
+
+function schedule2SecondNote() {
+    const today = new Date();
+    const weekday = today.getDay() + 1;
+    const hour = today.getHours();
+    const minute = today.getMinutes();
+    const second = today.getSeconds();
+    const newSecond = (second + 2) % 60;
+    const newMinute = newSecond ? minute : (minute + 1) % 60;
+    const newHour = newMinute ? hour : hour + 1;
+    console.log(`Scheduling weekly note two seconds from now for ${newHour} ${newMinute} ${newSecond}`);
+    Notifications.scheduleNotificationAsync({
+        content: {
+            title: 'test',
+            body: 'Scheduled in two seconds',
+        },
+        trigger: {
+            weekday: weekday,
+            hour: newHour,
+            minute: newMinute,
+            second: newSecond,
+            repeats: true,
+        }
+    })
+}
 
 function init() {
 
@@ -70,7 +134,11 @@ function insertLog(body: String) {
 
 async function test() {
     const notes = await Notifications.getAllScheduledNotificationsAsync();
-    console.log(notes);
+    console.log('Notifications:');
+    for(let note of notes) {
+        console.log(note);
+    }
+    //console.log(notes);
 }
 
 function test2() {
@@ -86,6 +154,11 @@ function test2() {
             repeats: true,
         }
     });
+}
+
+function clearNotes() {
+    console.log('clearing notifications');
+    Notifications.cancelAllScheduledNotificationsAsync();
 }
 
 // async function handleAppOpen() {
@@ -118,6 +191,20 @@ async function checkNotifiedToday() {
     }
     return false;
 }
+
+
+function checkLoggedToday() {
+    const q = "SELECT * FROM log ORDER BY timestamp DESC LIMIT 1;"
+    db.transaction(
+        tx => { tx.executeSql(
+            q,
+            [],
+            (tx, res) => {  },
+            (tx, res) => { console.log(res); return true; }
+        ); }
+    );
+}
+
 
 
 async function scheduleNewNotifications() {
@@ -184,44 +271,62 @@ export default function Home(props) {
     const theme = props.theme;
     const setTheme = props.setTheme;
     const style = styles[props.theme];
+
+    const navigation = props.navigation;
     const [message, setMessage] = useState('init');
-    const [logs, setLogs] = useState([]);
+    const [readyState, setReadyState] = useState({
+        note: false,
+        log: false,
+    });
+    const [logsData, setLogsData] = useState([]);
+    const [dummy, setDummy] = useState('');
+    // const [theme, setTheme] = useState(props.theme);
     // const [logText, setLogText] = useState('');
 
     const _getLogData = () => {
-        const q = "select * from log;"
+        const q = "select * from log order by timestamp;"
         db.transaction(
             tx => { tx.executeSql(
                 q,
                 [],
-                (tx, res) => { _makeLogs(res) },
+                (tx, res) => { _formatLogs(res) },
                 (tx, res) => { console.log(res); return true; }
             ); }
         );
     }
 
-    const _makeLogs = (res: SQLite.SQLResultSet) => {
+    const _formatLogs = (res: SQLite.SQLResultSet) => {
         let newLogs = [];
         for (let i = 0; i < res.rows.length; i++) {
             const row = res.rows.item(i);
-            console.log(row);
-            const newLog = <Log key={row.id} body={row.body} timestamp={row.timestamp} theme={theme}/>;
-            newLogs.push(newLog);
+            // console.log(row);
+            // const newLog = <Log key={row.id} id={row.id} body={row.body} timestamp={row.timestamp} theme={theme}/>;
+            newLogs.push(row);
         }
         console.log("NEWLOGS: ", newLogs)
-        setLogs(newLogs);
+        setLogsData(newLogs);
     }
+
+    // const _makeLogs = (data: any) => {
+
+    // }
 
     const _newLog = (body: String) => {
         insertLog(body);
         _getLogData();
     }
 
+    const isFocused = useIsFocused();
 
+    useEffect(() => {
+        _getLogData();
+    }, [isFocused])
 
     // handleAppOpen();
 
-    console.log(theme);
+    console.log('home theme' ,theme);
+    // _getLogData();
+    const scrollViewRef = useRef();
 
     return (
         <View style={{ flex:1, width: '100%' }}>
@@ -239,26 +344,61 @@ export default function Home(props) {
                     }}
                     value={logText}
                 />*/}
-                <View style={[style.header, local.header, {justifyContent: 'center'}]}>
-                    <View style={{height: 40}}/>
+                <SafeAreaView style={[style.header, local.header, {justifyContent: 'center'}]}>
                     <Text>You've made it home.</Text>
                     <Button
                         onPress={test}
-                        title='Log notifications'
+                        title='Log scheduled notifications'
                         color='blue'
                     />
-                    <Text>{message}</Text>
-                    <AppStateExample setMessage={ setMessage }/>
                     <Button
+                        onPress={sendNote}
+                        title='Send one-off note'
+                        color='blue'
+                    />
+                    <Button
+                        onPress={scheduleOldNote}
+                        title='Schedule note one minute ago'
+                        color='blue'
+                    />
+                    <Button
+                        onPress={schedule2SecondNote}
+                        title='Schedule note two seconds from now'
+                        color='green'
+                    />
+                    <Button
+                        onPress={clearNotes}
+                        title='Clear all notes'
+                        color='red'
+                    />
+                    <Text>{JSON.stringify(readyState)}</Text>
+                    <AppStateLogic setReadyState={ setReadyState }/>
+{/*                    <Button
                         title='change'
                         onPress={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                    />*/}
+                    <Button
+                        title='settings'
+                        onPress={() => navigation.navigate('Settings', {
+                            theme: theme,
+                        })}
                     />
-                </View>
+                </SafeAreaView>
                 <View style={[style.container, local.container]}>
-                    <ScrollView>
-                        <LogContainer logs={logs}/>
+                    
+                    <ScrollView
+                        ref={scrollViewRef}
+                        onContentSizeChange={() => {
+                            scrollViewRef.current.scrollToEnd({ animated: true })
+                        }}
+                        >
+                        <LogContainer logsData={logsData} theme={theme}/>
                         <View style={{height: 21.5}}/>
                     </ScrollView>
+{/*                <LinearGradient
+                    colors={['#43D2FFFF', '#43D2FF00']}
+                    style={local.linearGradient}
+                />*/}
                 </View>
                 <View style={[style.console]}>
                     
@@ -272,7 +412,7 @@ export default function Home(props) {
                         title="Make new log"
                     />*/}
 
-                    <LogConsole handleNewLog={ _newLog }/>
+                    <LogConsole handleNewLog={ _newLog } theme={theme}/>
                 </View>
             </KeyboardAvoidingView>
         </View>
@@ -286,30 +426,29 @@ export default function Home(props) {
 // }
 
 
-const LogContainer = (props) => {
-    const logs = props.logs;
-    // console.log(logs);
-    return (
-        <>{logs}</>
-    );
-}
 
 
 
 
 
-const AppStateExample = (props) => {
+
+const AppStateLogic = (props) => {
+    const setReadyState = props.setReadyState;
     const appState = useRef(AppState.currentState);
+    const notificationListener = useRef();
     const [appStateVisible, setAppStateVisible] = useState(appState.current);
 
     useEffect(() => {
+        _handleAppOpen();
         AppState.addEventListener("change", _handleAppStateChange);
-        Notifications.addNotificationReceivedListener(notification => {
+        notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+            console.log('got a notification!');
             _handleAppOpen();
         });
 
         return () => {
             AppState.removeEventListener("change", _handleAppStateChange);
+            Notifications.removeNotificationSubscription(notificationListener.current);
         }
     }, []);
 
@@ -330,10 +469,16 @@ const AppStateExample = (props) => {
         console.log('App was opened');
 
         const notifiedToday = await checkNotifiedToday();
-        const newMessage = notifiedToday ? "Recieved notification today!" : "Still waiting ...";
-        console.log(newMessage);
-        props.setMessage(newMessage);
-        // return;
+        const loggedToday = await checkLoggedToday();
+        //const newMessage = notifiedToday ? "Recieved notification today!" : "Still waiting ...";
+        const newReadyState = {
+            note: notifiedToday,
+            log: loggedToday || true,
+        };
+        
+        console.log(newReadyState);
+        setReadyState(newReadyState);
+        return;
         if (notifiedToday) {
             console.log("scheduling new notifications");
             await Notifications.cancelAllScheduledNotificationsAsync();
@@ -357,5 +502,12 @@ const local = StyleSheet.create({
         borderWidth: 1,
     },
     header: {
-    }
-})  ;
+        borderBottomWidth: 2,
+        borderColor: '#000',
+    },
+    linearGradient: {
+        position: 'absolute',
+        width: '100%',
+        height: 60,
+    },
+});

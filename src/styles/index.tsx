@@ -6,31 +6,83 @@ export const styles = {
         container: {
             backgroundColor: '#43D2FF',
         },
-        input: {
-
+        inputBubble: {
+            backgroundColor: '#fff',
+        },
+        inputShadow: {
+            backgroundColor: '#B2B2B2',
         },
         header: {
-            backgroundColor: 'tomato',
+            backgroundColor: '#43D2FF7F',
+        },
+        headerGradient: {
         },
         console: {
-            backgroundColor: '#43D2FF7F'
+            backgroundColor: '#43D2FF7F',
         },
         log: {
-            backgroundColor: '#FFFFFF'
-        }
+            backgroundColor: '#FFFFFF',
+            borderColor: '#000',
+        },
+        logShadow: {
+            backgroundColor: '#0000004D',
+        },
+        logBody: {
+            color: '#000',
+        },
     }),
     dark: StyleSheet.create({
         container: {
-            backgroundColor: 'pink',
+            backgroundColor: '#FFC317',
         },
-        input: {
-
+        inputBubble: {
+            backgroundColor: '#fff',
+        },
+        inputShadow: {
+            backgroundColor: '#B2B2B2',
         },
         header: {
-            backgroundColor: 'blue',
+            backgroundColor: '#FFE28E',
         },
         console: {
-            backgroundColor: 'red'
-        }
+            backgroundColor: '#FFE28E',
+        },
+        log: {
+            backgroundColor: '#fff',
+            borderColor: '#000',
+        },
+        logShadow: {
+            backgroundColor: '#0000004D',
+        },
+        logBody: {
+            color: '#000',
+        },
+    }),
+    white: StyleSheet.create({
+        container: {
+            backgroundColor: '#fff',
+        },
+        inputBubble: {
+            backgroundColor: '#fff',
+        },
+        inputShadow: {
+            backgroundColor: '#fff',
+        },
+        header: {
+            backgroundColor: '#fff',
+        },
+        console: {
+            backgroundColor: '#fff',
+        },
+        log: {
+            backgroundColor: '#fff',
+            borderColor: '#000',
+        },
+        logShadow: {
+            backgroundColor: '#000',
+        },
+        logBody: {
+            color: '#000',
+        },
     }),
 };
