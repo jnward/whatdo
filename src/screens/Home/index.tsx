@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, KeyboardAvoidingView, ScrollView, SafeAreaView, Text, TextInput, Button, AppState, AppStateStatus, AppStateStatic, StyleSheet } from 'react-native';
+import { Alert, View, KeyboardAvoidingView, ScrollView, SafeAreaView, Text, TextInput, Button, AppState, AppStateStatus, AppStateStatic, StyleSheet } from 'react-native';
+import * as Linking from 'expo-linking';
 
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -10,9 +11,11 @@ import { useIsFocused } from '@react-navigation/native';
 
 import LogConsole from './components/LogConsole';
 import LogContainer from './components/LogContainer';
+import LogContainerPlaceholder from './components/LogContainerPlaceholder';
 import Log from './components/Log';
 
 import { styles } from '../../styles';
+import { requestPermissionsAsync } from 'expo-notifications';
 // TODO: ask perms for notifs
 
 const EARLIEST_HOUR = 10;
@@ -81,7 +84,7 @@ function schedule2SecondNote() {
 
 function insertLogYesterday() {
     const createLog =
-        "insert into log (body, timestamp) values ('test', datetime('now', '-1 day'));";
+        "insert into log (body, timestamp) values ('test', datetime('now', '-1 day', 'localtime'));";
     executeQuery(createLog, []);
 }
 
@@ -201,7 +204,8 @@ async function checkNotifiedToday() {
 
 function getLastLog() {
     //const q = "SELECT strftime('%s', timestamp) as unixtime FROM log ORDER BY timestamp DESC LIMIT 1;"
-    const q = "SELECT id FROM log WHERE timestamp >= date('now', 'start of day') AND timestamp < date('now', 'start of day', '+1 day');"
+    const q = "SELECT timestamp FROM log WHERE timestamp >= datetime('now', 'start of day', 'localtime') AND timestamp < datetime('now', 'start of day', 'localtime', '+1 day');"
+    //const q = "select datetime('now', 'localtime'), datetime('now', 'start of day'), datetime('now', 'start of day', '+1 day');"
     return new Promise(resolve => {
         db.transaction(
             tx => { tx.executeSql(
@@ -216,6 +220,7 @@ function getLastLog() {
 
 async function checkLoggedToday() {
     const rows = await getLastLog();
+    console.log(rows);
     return rows.length > 0;
 }
 
@@ -260,25 +265,14 @@ async function scheduleNewNotifications() {
 }
 
 
-// const _handleAppStateChange = async (nextAppState: AppStateStatus) => {
-//     if (
-//         appState.match(/inactive|background/) &&
-//         nextAppState === "active"
-//     ) {
-//         const notifiedToday = await checkNotifiedToday();
-//         const newMessage = notifiedToday ? "Recieved notification today!" : "Still waiting ...";
-//         // setMessage(newMessage);
-//         // handleAppOpen();
-
-//     }
-//     appState = nextAppState;
-//     // setAppStateVisible(appState.current);
-//     console.log("AppState~~~", appState);
-// };
+async function checkAllowsNotificationsAsync() {
+    const settings = await Notifications.getPermissionsAsync();
+    return (
+      settings.granted || settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL
+    );
+  }
 
 
-// let appState: String = AppState.currentState;
-// AppState.addEventListener("change", _handleAppStateChange);
 
 
 export default function Home(props) {
@@ -288,10 +282,8 @@ export default function Home(props) {
 
     const navigation = props.navigation;
     const [message, setMessage] = useState('init');
-    const [readyState, setReadyState] = useState({
-        note: false,
-        log: false,
-    });
+    const [noteState, setNoteState] = useState(false);
+    const [logState, setLogState] = useState(false);
     const [logsData, setLogsData] = useState([]);
     const [dummy, setDummy] = useState('');
     // const [theme, setTheme] = useState(props.theme);
@@ -327,6 +319,7 @@ export default function Home(props) {
 
     const _newLog = (body: String) => {
         insertLog(body);
+        setLogState(true);
         _getLogData();
     }
 
@@ -335,6 +328,9 @@ export default function Home(props) {
     useEffect(() => {
         _getLogData();
     }, [isFocused])
+
+    const [notificationsAllowed, setNotificationsAllowed] = useState(true);
+
 
     // handleAppOpen();
 
@@ -390,8 +386,18 @@ export default function Home(props) {
                         title='Add log from yesterday'
                         color='green'
                     />
-                    <Text>{JSON.stringify(readyState)}</Text>
-                    <AppStateLogic setReadyState={ setReadyState }/>
+                    {notificationsAllowed ? 
+                        null : <Button
+                                    onPress={Linking.openSettings}
+                                    title='Press here to enable notifications'
+                               />
+                    }
+                    <Text>{JSON.stringify({note: noteState, log: logState})}</Text>
+                    <AppStateLogic
+                        setNoteState={setNoteState}
+                        setLogState={setLogState}
+                        setNotificationsAllowed={setNotificationsAllowed}
+                    />
 {/*                    <Button
                         title='change'
                         onPress={() => setTheme(theme === 'light' ? 'dark' : 'light')}
@@ -404,16 +410,17 @@ export default function Home(props) {
                     />
                 </SafeAreaView>
                 <View style={[style.container, local.container]}>
-                    
-                    <ScrollView
-                        ref={scrollViewRef}
-                        onContentSizeChange={() => {
-                            scrollViewRef.current.scrollToEnd({ animated: true })
-                        }}
-                        >
-                        <LogContainer logsData={logsData} theme={theme}/>
-                        <View style={{height: 21.5}}/>
-                    </ScrollView>
+                    {logsData.length ? 
+                        <ScrollView
+                            ref={scrollViewRef}
+                            onContentSizeChange={() => {
+                                scrollViewRef.current.scrollToEnd({ animated: true })
+                            }}
+                            >
+                            <LogContainer logsData={logsData} theme={theme}/>
+                            <View style={{height: 21.5}}/>
+                        </ScrollView> : <LogContainerPlaceholder/>
+                    }
 {/*                <LinearGradient
                     colors={['#43D2FFFF', '#43D2FF00']}
                     style={local.linearGradient}
@@ -431,7 +438,7 @@ export default function Home(props) {
                         title="Make new log"
                     />*/}
 
-                    <LogConsole handleNewLog={ _newLog } theme={theme}/>
+                    <LogConsole handleNewLog={_newLog} theme={theme}/>
                 </View>
             </KeyboardAvoidingView>
         </View>
@@ -452,11 +459,13 @@ export default function Home(props) {
 
 
 const AppStateLogic = (props) => {
-    const setReadyState = props.setReadyState;
+    const setNoteState = props.setNoteState;
+    const setLogState = props.setLogState;
+    const setNotificationsAllowed = props.setNotificationsAllowed;
     const appState = useRef(AppState.currentState);
     const notificationListener = useRef();
     const [appStateVisible, setAppStateVisible] = useState(appState.current);
-
+    const checkedNotes = useRef(false);
     useEffect(() => {
         _handleAppOpen();
         AppState.addEventListener("change", _handleAppStateChange);
@@ -469,7 +478,7 @@ const AppStateLogic = (props) => {
             AppState.removeEventListener("change", _handleAppStateChange);
             Notifications.removeNotificationSubscription(notificationListener.current);
         }
-    }, []);
+    }, [checkedNotes]);
 
     const _handleAppStateChange = async (nextAppState: AppStateStatus) => {
         if (
@@ -484,19 +493,62 @@ const AppStateLogic = (props) => {
         console.log("AppState", appState.current);
     };
 
+    
+
+    //const 
+
+    const requestPermissions = () => Notifications.requestPermissionsAsync({
+        ios: {
+            allowAlert: true,
+            allowBadge: true,
+            allowSound: true,
+            allowProvisional: true,
+        },
+    }).then((permissions) => {
+        console.log(permissions);
+        if (permissions.status === 'granted') {
+            setNotificationsAllowed(true);
+        } else {
+            setNotificationsAllowed(false);
+            Linking.openSettings();
+        }
+    });
+
+    const _verifyNotificationPermissions = async () => checkAllowsNotificationsAsync().then((doesAllow) => {
+        if (doesAllow) {
+            setNotificationsAllowed(true);
+        } else {
+            setNotificationsAllowed(false);
+            if (!checkedNotes.current) {
+                Alert.alert(
+                    'Welcome to WhatDo!',
+                    "WhatDo works by sending you a notification once per day asking \
+what you're doing. Make sure you enable notifications!",
+                    [{
+                        text: "Let's go!",
+                        onPress: requestPermissions,
+                    },
+                    {
+                        text: "I'm not ready...",
+                        style: 'destructive',
+                    }]
+                );
+            }
+        }
+        checkedNotes.current = true;
+    });
+    
+
     const _handleAppOpen = async () => {
         console.log('App was opened');
+        _verifyNotificationPermissions();
 
         const notifiedToday = await checkNotifiedToday();
         const loggedToday = await checkLoggedToday();
         //const newMessage = notifiedToday ? "Recieved notification today!" : "Still waiting ...";
-        const newReadyState = {
-            note: notifiedToday,
-            log: loggedToday,
-        };
-        
-        console.log(newReadyState);
-        setReadyState(newReadyState);
+        setNoteState(notifiedToday);
+        setLogState(loggedToday);
+    
         return;
         if (notifiedToday) {
             console.log("scheduling new notifications");
