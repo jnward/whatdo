@@ -1,48 +1,54 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { TextInput, Text, View, TouchableOpacity, KeyboardAvoidingView, StyleSheet, Keyboard } from 'react-native';
 import { styles } from '../../../styles';
+
+
 export default function LogConsole(props) {
     const handleNewLog = props.handleNewLog;
+    const logState = props.logState;
+    const noteState = props.noteState;
     const [newLogText, setNewLogText] = useState('');
     const theme = props.theme;
     const style = styles[theme];
+
+
 
     return (
         <View
             style={local.container}
         >
-            <View style={ [local.inputShadow, style.inputShadow] }>
-                <View style={ [local.inputBubble, style.inputBubble] }>
-                    <TextInput
-                        style={local.input}
-                        onChangeText={setNewLogText}
-                        // onSubmitEditing={() => {
-                        //     handleNewLog(newLogText);
-                        //     setNewLogText('');
-                        // }}
-                        value={newLogText}
-                        placeholder={'What have you been up to?'}
-                        placeholderTextColor="#B1B1B1"
-                        // enablesReturnKeyAutomatically
-                        multiline
-                        scrollEnabled={false}
-                    />
-
-
-
-                </View>
-            </View>
-            <TouchableOpacity
-                style={local.button}
-                onPress={() => {
-                    if (!newLogText) { Keyboard.dismiss(); return; };
-                    handleNewLog(newLogText);
-                    setNewLogText('');
-                    Keyboard.dismiss();
-                }}
-            >
-                <Text style={local.buttonText}>Log</Text>
-            </TouchableOpacity>
+            { logState ?
+                <Text>U sent log! :D</Text> :
+                !noteState ? 
+                <Text>Wait for note :O</Text> :
+                <>
+                    <View style={ [local.inputShadow, style.inputShadow] }>
+                        <View style={ [local.inputBubble, style.inputBubble] }>
+                            <TextInput
+                                style={local.input}
+                                onChangeText={setNewLogText}
+                                value={newLogText}
+                                placeholder={'What have you been up to?'}
+                                placeholderTextColor="#B1B1B1"
+                                // enablesReturnKeyAutomatically
+                                multiline
+                                scrollEnabled={false}
+                            />
+                        </View>
+                    </View>
+                    <TouchableOpacity
+                        style={local.button}
+                        onPress={() => {
+                            if (!newLogText) { Keyboard.dismiss(); return; };
+                            handleNewLog(newLogText);
+                            setNewLogText('');
+                            Keyboard.dismiss();
+                        }}
+                    >
+                        <Text style={local.buttonText}>Log</Text>
+                    </TouchableOpacity>
+                </>
+            }
         </View>
 
     );

@@ -344,16 +344,6 @@ export default function Home(props) {
                 behavior='padding'
                 style={{ flex: 1 }}
             >
-    {/*            <TextInput
-                    style={styles.input}
-                    onChangeText={setLogText}
-                    onSubmitEditing={() => {
-                        insertLog(logText);
-                        _getLogData();
-                        setLogText('');
-                    }}
-                    value={logText}
-                />*/}
                 <SafeAreaView style={[style.header, local.header, {justifyContent: 'center'}]}>
                     <Text>You've made it home.</Text>
                     <Button
@@ -398,10 +388,6 @@ export default function Home(props) {
                         setLogState={setLogState}
                         setNotificationsAllowed={setNotificationsAllowed}
                     />
-{/*                    <Button
-                        title='change'
-                        onPress={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                    />*/}
                     <Button
                         title='settings'
                         onPress={() => navigation.navigate('Settings', {
@@ -427,35 +413,17 @@ export default function Home(props) {
                 />*/}
                 </View>
                 <View style={[style.console]}>
-                    
-                    
-        {/*            <Button
-                        onPress={ _getLogData }
-                        title="Press me!"
-                    />*/}
-        {/*            <Button
-                        onPress={() => {insertLog(logText)}}
-                        title="Make new log"
-                    />*/}
-
-                    <LogConsole handleNewLog={_newLog} theme={theme}/>
+                    <LogConsole
+                        handleNewLog={_newLog}
+                        logState={logState}
+                        noteState={noteState}
+                        theme={theme}
+                    />
                 </View>
             </KeyboardAvoidingView>
         </View>
     );
 }
-
-
-
-// function getLogs() {
-//     executeQuery("select * from log;");
-// }
-
-
-
-
-
-
 
 
 const AppStateLogic = (props) => {
@@ -530,7 +498,7 @@ what you're doing. Make sure you enable notifications!",
                     },
                     {
                         text: "I'm not ready...",
-                        style: 'destructive',
+                        style: 'destructive', 
                     }]
                 );
             }
