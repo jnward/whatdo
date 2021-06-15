@@ -1,11 +1,10 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Alert, View, KeyboardAvoidingView, ScrollView, SafeAreaView, Text, TextInput, Button, AppState, AppStateStatus, AppStateStatic, StyleSheet } from 'react-native';
+import { Alert, View, KeyboardAvoidingView, ScrollView, SafeAreaView, Text, TextInput, Button, AppState, AppStateStatus, AppStateStatic, StyleSheet, RecyclerViewBackedScrollViewBase } from 'react-native';
 import * as Linking from 'expo-linking';
 
 import { LinearGradient } from 'expo-linear-gradient';
 
 import * as Notifications from 'expo-notifications';
-import * as SQLite from 'expo-sqlite';
 
 import { useIsFocused } from '@react-navigation/native';
 
@@ -14,15 +13,14 @@ import LogContainer from './components/LogContainer';
 import LogContainerPlaceholder from './components/LogContainerPlaceholder';
 import Log from './components/Log';
 
+import { db } from '../../utils/Database';
+
 import { styles } from '../../styles';
 import { requestPermissionsAsync } from 'expo-notifications';
 // TODO: ask perms for notifs
 
 const EARLIEST_HOUR = 10;
 const LATEST_HOUR = 22;
-
-const db = SQLite.openDatabase('whatdo');
-
 
 function sendNote() {
     console.log('sending note!');
@@ -84,11 +82,11 @@ function schedule2SecondNote() {
 
 function insertLogYesterday() {
     const createLog =
-        "insert into log (body, timestamp) values ('test', datetime('now', '-1 day', 'localtime'));";
+        "insert into daily_log (body, timestamp) values ('test', datetime('now', '-1 day', 'localtime'));";
     executeQuery(createLog, []);
 }
 
-function init() {
+async function init() {
 
     // Notification handler if user recieves a note while in app
     Notifications.setNotificationHandler({
@@ -100,17 +98,14 @@ function init() {
     });
 
     executeQuery("drop table log;")
-    initDB();
+    await initDB();
     // executeQuery("select * from log");
     // executeQuery("select datetime(timestamp, 'localtime');")
 
 
 }
-// Notifications.addNotificationReceivedListener(notification => {
-//     handleAppOpen();
-// });
 
-function executeQuery(q: String, params: Array<any>=[]) {
+function executeQuery(q: string, params: Array<any>=[]) {
     // console.log(q, params);
     db.transaction(
         tx => { tx.executeSql(
@@ -122,22 +117,90 @@ function executeQuery(q: String, params: Array<any>=[]) {
     );
 }
 
+// async function executeQueryAsync(q: string, params: Array<any>=[]) {
+//     var rows;
+//     await db.transaction(
+//         async tx => { rows = await tx.executeSql(
+//             q,
+//             [],
+//             async (tx, res) => { return res },
+//             (tx, res) => { console.log('Error', res); return true; }
+//         )}
+//     );
+//     console.log('return', rows);
+//     return rows;
+// }
+
 function initDB() {
     const createLogTable =
-        "create table if not exists log (" +
+        "create table if not exists daily_log (" +
         "id integer primary key autoincrement not null, " +
         "body text, " +
         "timestamp datetime default (datetime('now', 'localtime'))" +
         ");";
 
-    executeQuery(createLogTable);
+    const createTimeTable = 
+        "create table if not exists start_end_time (" +
+        "id integer primary key not null, " +
+        "hour integer default 10, " +
+        "startend varchar(5) default 'start'" +
+        ");";
+
+    const insertStartTime = 
+        "insert into start_end_time (id, hour, startend) values (1, 10, 'start');"
+
+    const insertEndTime = 
+        "insert into start_end_time (id, hour, startend) values (2, 20, 'end');"
+
+    const getLogs = 
+        "select * from start_end_time;"
+
+    console.log('CREATE LOG TABLE', executeQuery(createLogTable));
+    console.log('CREATE TIME TABLE', executeQuery(createTimeTable));
+    console.log('CREATE START TIME', executeQuery(insertStartTime));
+    console.log('CREATE START TIME', executeQuery(insertEndTime));
+    // console.log('CREATE START TIME', await executeQueryAsync(getLogs));
+
+
 }
 
-init();
+function dropDBTables() {
+    const q1 = "drop table if exists log;"
+    const q2 = "drop table daily_log;"
+    const q3 = "drop table start_end_time;";
+    executeQuery(q1);
+    executeQuery(q2);
+    executeQuery(q3);
+}
 
-function insertLog(body: String) {
+// dropDBTables();
+init();  // TODO: put in useEffect?
+
+function getTime(startend: string='start', cb: Function) {
+    console.log('getting time', startend);
+    const q = "select * from start_end_time where startend=? limit 1;";
+    db.transaction(
+        tx => { tx.executeSql(
+            q,
+            [startend],
+            (tx, res) => {
+                console.log('got time', res.rows.item(0).hour)
+                cb(res.rows.item(0)?.hour);
+            },
+            (tx, res) => {console.log('Error: ', res); return false},
+        )}
+    );
+}
+
+function updateTime(startend: string='start', hour: number) {
+    const q = "update table start_end_time set hour=? where startend=?;";
+    const params = [startend, hour];
+    executeQuery(q, params);
+}
+
+function insertLog(body: string) {
     const createLog =
-        "insert into log (body) values (?);";
+        "insert into daily_log (body) values (?);";
     executeQuery(createLog, [body]);
 }
 
@@ -204,7 +267,8 @@ async function checkNotifiedToday() {
 
 function getLastLog() {
     //const q = "SELECT strftime('%s', timestamp) as unixtime FROM log ORDER BY timestamp DESC LIMIT 1;"
-    const q = "SELECT timestamp FROM log WHERE timestamp >= datetime('now', 'start of day', 'localtime') AND timestamp < datetime('now', 'start of day', 'localtime', '+1 day');"
+    const q = "SELECT timestamp FROM daily_log WHERE timestamp >= datetime('now', 'start of day', 'localtime') AND timestamp < datetime('now', 'start of day', 'localtime', '+1 day');"
+    // const q = "SELECT * FROM daily_log order by id desc limit 1;"
     //const q = "select datetime('now', 'localtime'), datetime('now', 'start of day'), datetime('now', 'start of day', '+1 day');"
     return new Promise(resolve => {
         db.transaction(
@@ -226,7 +290,7 @@ async function checkLoggedToday() {
 
 
 
-async function scheduleNewNotifications() {
+async function scheduleNewNotifications(earliest_hour: number, latest_hour: number) {
     const today = new Date();
     const weekday = today.getDay() + 1;
     // const weekday = 4;
@@ -278,6 +342,10 @@ async function checkAllowsNotificationsAsync() {
 export default function Home(props) {
     const theme = props.theme;
     const setTheme = props.setTheme;
+    // const startTime = props.startTime;
+    // const setStartTime = props.setStartTime;
+    const [startTime, setStartTime] = useState();
+
     const style = styles[props.theme];
 
     const navigation = props.navigation;
@@ -285,18 +353,20 @@ export default function Home(props) {
     const [noteState, setNoteState] = useState(false);
     const [logState, setLogState] = useState(false);
     const [logsData, setLogsData] = useState([]);
+    // const [startTime, setStartTime] = useState(12);
+    const [endTime, setEndTime] = useState(4);
     const [dummy, setDummy] = useState('');
     // const [theme, setTheme] = useState(props.theme);
     // const [logText, setLogText] = useState('');
 
     const _getLogData = () => {
-        const q = "select * from log order by timestamp;"
+        const q = "select * from daily_log order by timestamp;"
         db.transaction(
             tx => { tx.executeSql(
                 q,
                 [],
-                (tx, res) => { _formatLogs(res) },
-                (tx, res) => { console.log(res); return true; }
+                (tx, res) => { console.log('LOG DATA', res.rows);_formatLogs(res) },
+                (tx, res) => { console.log('ERROR', res); return true; }
             ); }
         );
     }
@@ -327,6 +397,10 @@ export default function Home(props) {
 
     useEffect(() => {
         _getLogData();
+        console.log('useeffect')
+        getTime('start', setStartTime);
+        getTime('end', setEndTime);
+        
     }, [isFocused])
 
     const [notificationsAllowed, setNotificationsAllowed] = useState(true);
@@ -338,6 +412,7 @@ export default function Home(props) {
     // _getLogData();
     const scrollViewRef = useRef();
 
+
     return (
         <View style={{ flex:1, width: '100%' }}>
             <KeyboardAvoidingView
@@ -346,6 +421,13 @@ export default function Home(props) {
             >
                 <SafeAreaView style={[style.header, local.header, {justifyContent: 'center'}]}>
                     <Text>You've made it home.</Text>
+
+                    <Button
+                        onPress={() => {dropDBTables(); initDB();}}
+                        title='Reset DB'
+                        color='red'
+                    />
+                    
                     <Button
                         onPress={test}
                         title='Log scheduled notifications'
@@ -392,8 +474,11 @@ export default function Home(props) {
                         title='settings'
                         onPress={() => navigation.navigate('Settings', {
                             theme: theme,
+                            startTime: startTime,
+                            // updateTime: updateTime,
                         })}
                     />
+                    <Text>{`${startTime}, ${endTime}`}</Text>
                 </SafeAreaView>
                 <View style={[style.container, local.container]}>
                     {logsData.length ? 

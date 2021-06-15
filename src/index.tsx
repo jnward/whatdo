@@ -9,7 +9,7 @@ export default function Application({navigation, route}) {
 
     console.log('Application theme:', theme);
 
-    const _setTheme = (newTheme) => {
+    const _setTheme = (newTheme: string) => {
     	navigation.setParams({
     		theme: newTheme,
     	});
@@ -17,6 +17,10 @@ export default function Application({navigation, route}) {
     }
     
     return(
-        <Home theme={theme} setTheme={_setTheme} navigation={navigation}/>
+        <Home
+            theme={theme}
+            setTheme={_setTheme}
+            navigation={navigation}
+        />
     );    
 };

@@ -5,19 +5,38 @@ import { createStackNavigator } from '@react-navigation/stack';
 import Application from '../../src';
 import { styles } from '../styles';
 
+import { db } from '../utils/Database';
+
 
 const RootStack = createStackNavigator();
 
 function Settings({ navigation, route }) {
 	const [theme, setTheme] = useState(route.params.theme);
+	const [startTime, setStartTime] = useState(route.params.startTime);
+	// const updateTime = route.params.updateTime;
 	console.log('params theme', route.params.theme);
 	const style = styles[theme];
 	// navigation.setParams({
  //    	selectedTheme: 'dark',
  //    });
+
+	function _updateTime(startend: string='start', hour: number) {
+		const q = "update start_end_time set hour=? where startend=?;";
+		const params = [hour, startend];
+		db.transaction(
+			tx => { tx.executeSql(
+				q,
+				params,
+				(tx, res) => {console.log(res)},
+				(tx, res) => {console.log('Error: ', res); return false},
+			)}
+		);
+	}
+
 	return (
 		<SafeAreaView style={[style.container, { height: '100%', width: '100%', flex: 1}]}>
 			<Text>Hello!</Text>
+			<Text>Start Time: {`${startTime}`}</Text>
 			<Button
 				title={theme === 'dark' ? '* dark theme' : 'dark theme'}
 				onPress={() => {
@@ -33,15 +52,26 @@ function Settings({ navigation, route }) {
 				}}
 			/>
 			<Button
+				title='update start time'
+				onPress={() => {
+					const rand = Math.floor(Math.random() * 12) + 1;
+					_updateTime('start', rand);
+					setStartTime(rand);
+				}}
+			/>
+			<Button
 				title='go back'
 				onPress={() => {
 					navigation.navigate({
 						name: 'Main',
-						params: {theme: theme},
+						params: {
+							theme: theme,
+						},
 						merge: true,
 					});
 				}}
 			/>
+			
 
 		</SafeAreaView>
 	)
@@ -60,13 +90,17 @@ export function RootStackScreen() {
 				<RootStack.Screen
 					name="Main"
 					component={Application}
-					initialParams={{ theme: 'light' }}
+					initialParams={{
+						theme: 'light',
+					}}
 					options={{ headerShown: false }}
 				/>
 				<RootStack.Screen
 					name="Settings"
 					component={Settings}
-					initialParams={{ theme: 'light' }}
+					initialParams={{
+						theme: 'light',
+					}}
 					options={{ headerShown: false }}
 				/>
 			</RootStack.Navigator>
