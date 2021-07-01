@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { FlatList, Alert, View, KeyboardAvoidingView, ScrollView, SafeAreaView, Text, TextInput, Button, AppState, AppStateStatus, AppStateStatic, StyleSheet, RecyclerViewBackedScrollViewBase } from 'react-native';
+import { Animated, FlatList, Alert, View, KeyboardAvoidingView, ScrollView, SafeAreaView, Text, TextInput, Button, AppState, AppStateStatus, AppStateStatic, StyleSheet, RecyclerViewBackedScrollViewBase } from 'react-native';
 import * as Linking from 'expo-linking';
 
 import { LinearGradient } from 'expo-linear-gradient';
@@ -334,9 +334,7 @@ async function checkAllowsNotificationsAsync() {
     return (
       settings.granted || settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL
     );
-  }
-
-
+}
 
 
 export default function Home(props) {
@@ -357,6 +355,74 @@ export default function Home(props) {
     const [dummy, setDummy] = useState('');
     // const [theme, setTheme] = useState(props.theme);
     // const [logText, setLogText] = useState('');
+    const scrollHeader = useRef(false);
+
+    const scrollY = useRef(new Animated.Value(0));
+    const ref = useRef();
+
+    const handleScroll = Animated.event(
+            [
+                {
+                    nativeEvent: {
+                        contentOffset: { y: scrollY.current },
+                    },
+                },
+            ],
+            {
+                useNativeDriver: true,
+            },
+        );
+
+    const getCloser = (value, checkOne, checkTwo) =>
+        Math.abs(value - checkOne) < Math.abs(value - checkTwo) ? checkOne : checkTwo;
+
+    // const handleSnap = ({nativeEvent}) => {
+    //     console.log('snap');
+    //     // flatListRef.current.scrollToOffset({offset: 0});
+    //     const offsetY = nativeEvent.contentOffset.y;
+    //     if (
+    //         !(
+    //         translateYNumber.current === 0 ||
+    //         translateYNumber.current === -headerHeight / 2
+    //         )
+    //     ) {
+    //         if (flatListRef.current) {
+    //         flatListRef.current.scrollToOffset({
+    //             offset:
+    //             getCloser(translateYNumber.current, -headerHeight, 0) ===
+    //             -headerHeight
+    //                 ? 0 + headerHeight
+    //                 : offsetY - headerHeight,
+    //         });
+    //         }
+    //     }
+    //     };
+    // const headerHeight = scrollY.current.interpolate({
+    //     inputRange: [0, 200],
+    //     outputRange: [500, 0],
+    //     extrapolate: 'clamp',
+    // });
+
+    const headerHeight = 350;
+
+    const clampedScrollY = scrollY.current.interpolate({
+        inputRange: [0, headerHeight],
+        outputRange: [0, headerHeight],
+        extrapolateLeft: 'clamp'
+    });
+
+    const scrollYClamped = Animated.diffClamp(clampedScrollY, 0, 300+headerHeight);
+    const translateY = scrollYClamped.interpolate({
+        inputRange: [0, headerHeight],
+        outputRange: [0, -headerHeight],
+        // extrapolate: 'clamp',
+    });
+
+
+
+
+    const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
+
 
     const _getLogData = () => {
         const q = "select * from daily_log order by timestamp desc;"
@@ -397,8 +463,16 @@ export default function Home(props) {
     useEffect(() => {
         _getLogData();
         console.log('useeffect')
+        // translateY.addListener(({value}) => {
+        //     console.log('add listener');
+        //     translateYNumber.current = value;
+        // });
         getTime('start', setStartTime);
         getTime('end', setEndTime);
+        return () => {
+            translateY.removeAllListeners();
+            console.log('remove listeners');
+        }
         
     }, [isFocused])
 
@@ -410,6 +484,7 @@ export default function Home(props) {
     console.log('home theme' ,theme);
     // _getLogData();
     const scrollViewRef = useRef();
+    const flatListRef = useRef();
 
 
     return (
@@ -418,86 +493,116 @@ export default function Home(props) {
                 behavior='padding'
                 style={{ flex: 1 }}
             >
-                <SafeAreaView style={[style.header, local.header, {justifyContent: 'center'}]}>
-                    <Text>You've made it home.</Text>
+                <SafeAreaView style={{flex: 1}}>
+                    {/* <View style={{overflow: 'hidden', height: headerHeight}}> */}
+                    <Animated.View style={[style.header, local.header, {justifyContent: 'center', transform: [{translateY}]}]}>
+                        <Text>You've made it home.</Text>
 
-                    <Button
-                        onPress={() => {dropDBTables(); initDB();}}
-                        title='Reset DB'
-                        color='red'
-                    />
-                    
-                    <Button
-                        onPress={test}
-                        title='Log scheduled notifications'
-                        color='blue'
-                    />
-                    <Button
-                        onPress={sendNote}
-                        title='Send one-off note'
-                        color='blue'
-                    />
-                    <Button
-                        onPress={scheduleOldNote}
-                        title='Schedule note one minute ago'
-                        color='blue'
-                    />
-                    <Button
-                        onPress={schedule2SecondNote}
-                        title='Schedule note two seconds from now'
-                        color='green'
-                    />
-                    <Button
-                        onPress={clearNotes}
-                        title='Clear all notes'
-                        color='red'
-                    />
-                    <Button
-                        onPress={insertLogYesterday}
-                        title='Add log from yesterday'
-                        color='green'
-                    />
-                    {notificationsAllowed ? 
-                        null : <Button
-                                    onPress={Linking.openSettings}
-                                    title='Press here to enable notifications'
-                               />
-                    }
-                    <Text>{JSON.stringify({note: noteState, log: logState})}</Text>
-                    <AppStateLogic
-                        setNoteState={setNoteState}
-                        setLogState={setLogState}
-                        setNotificationsAllowed={setNotificationsAllowed}
-                    />
-                    <Button
-                        title='settings'
-                        onPress={() => navigation.navigate('Settings', {
-                            theme: theme,
-                            startTime: startTime,
-                            endTime: endTime,
-                            // updateTime: updateTime,
-                        })}
-                    />
-                    <Text>{`${startTime}, ${endTime}`}</Text>
-                </SafeAreaView>
-                <View style={[style.container, local.container]}>
-
-                    {logsData.length ? 
-                        <ScrollView
-                            ref={scrollViewRef}
+                        <Button
+                            onPress={() => {dropDBTables(); initDB();}}
+                            title='Reset DB'
+                            color='red'
+                        />
+                        
+                        <Button
+                            onPress={test}
+                            title='Log scheduled notifications'
+                            color='blue'
+                        />
+                        <Button
+                            onPress={sendNote}
+                            title='Send one-off note'
+                            color='blue'
+                        />
+                        <Button
+                            onPress={scheduleOldNote}
+                            title='Schedule note one minute ago'
+                            color='blue'
+                        />
+                        <Button
+                            onPress={schedule2SecondNote}
+                            title='Schedule note two seconds from now'
+                            color='green'
+                        />
+                        <Button
+                            onPress={clearNotes}
+                            title='Clear all notes'
+                            color='red'
+                        />
+                        <Button
+                            onPress={insertLogYesterday}
+                            title='Add log from yesterday'
+                            color='green'
+                        />
+                        {notificationsAllowed ? 
+                            null : <Button
+                                        onPress={Linking.openSettings}
+                                        title='Press here to enable notifications'
+                                />
+                        }
+                        <Text>{JSON.stringify({note: noteState, log: logState})}</Text>
+                        <AppStateLogic
+                            setNoteState={setNoteState}
+                            setLogState={setLogState}
+                            setNotificationsAllowed={setNotificationsAllowed}
+                        />
+                        <Button
+                            title='settings'
+                            onPress={() => navigation.navigate('Settings', {
+                                theme: theme,
+                                startTime: startTime,
+                                endTime: endTime,
+                                // updateTime: updateTime,
+                            })}
+                        />
+                        <Text>{`${startTime}, ${endTime}`}</Text>
+                    </Animated.View>
+                    {/* </View> */}
+                    {/* <Animated.View style={[style.container, local.container]}> */}
+                        {/* {logsData.length ?  */}
+                        <AnimatedFlatList
+                            ListHeaderComponent={<View style={{height: headerHeight}}/>}
+                            scrollEventThrottle={16}
+                            onScroll={handleScroll}
+                            bounces={true}
+                            // onScrollEndDrag={() => {console.log('end drag'); translateY.removeAllListeners();}}
+                            // onMomentumScrollEnd={handleSnap}
+                            contentContainerStyle={[style.container]}
+                            ref={ (ref) => { flatListRef.current = ref } }
                             onContentSizeChange={() => {
-                                scrollViewRef.current.scrollTo({ animated: true })
+                                flatListRef.current.scrollToOffset({ offset: 0, animated: true })
                             }}
-                            >
-                            <LogContainer logsData={logsData} theme={theme}/>
-                            <View style={{height: 21.5}}/>
-                        </ScrollView> : <LogContainerPlaceholder/>
-                    }
-{/*                <LinearGradient
-                    colors={['#43D2FFFF', '#43D2FF00']}
-                    style={local.linearGradient}
-                />*/}
-                </View>
+                            data={logsData}
+                            // listEmptyComponent={() => {console.log('list empty'); return Log}}
+                            // <Log key={logData.id} id={logData.id} body={logData.body} timestamp={logData.timestamp} theme={theme}/>
+                            renderItem={({item, index, separators}) => (
+                                <Log
+                                    key={item.id}
+                                    id={item.id}
+                                    body={item.body}
+                                    timestamp={item.timestamp}
+                                    theme={theme}
+                                />
+                            )}
+                            />
+                        {/* /> : <LogContainerPlaceholder/> */}
+                        {/* {logsData.length ? 
+                            <ScrollView
+                                ref={scrollViewRef}
+                                onContentSizeChange={() => {
+                                    scrollViewRef.current.scrollTo({ animated: true })
+                                }}
+                                >
+                                <LogContainer logsData={logsData} theme={theme}/>
+                                <View style={{height: 21.5}}/>
+                            </ScrollView> : <LogContainerPlaceholder/>
+                        } */}
+    {/*                <LinearGradient
+                        colors={['#43D2FFFF', '#43D2FF00']}
+                        style={local.linearGradient}
+                    />*/}
+                    {/* </Animated.View> */}
+                </SafeAreaView>
                 <View style={[style.console]}>
                     <LogConsole
                         handleNewLog={_newLog}
@@ -629,6 +734,9 @@ const local = StyleSheet.create({
     header: {
         borderBottomWidth: 2,
         borderColor: '#000',
+        position: 'absolute',
+        width: '100%',
+        zIndex: 1,
     },
     linearGradient: {
         position: 'absolute',

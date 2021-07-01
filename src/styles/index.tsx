@@ -13,7 +13,7 @@ export const styles = {
             backgroundColor: '#B2B2B2',
         },
         header: {
-            backgroundColor: '#43D2FF7F',
+            backgroundColor: '#43D2FF',
         },
         headerGradient: {
         },

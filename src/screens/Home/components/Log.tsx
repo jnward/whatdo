@@ -8,7 +8,6 @@ export default function Log(props) {
     const timestamp = props.timestamp;
     const theme = props.theme;
     const style = styles[theme];
-    console.log(props.id);
     return (
     	<View style={{marginTop: 4}}>
 	        <Text style={[local.logTimestamp, style.logBody]}>{timestamp}</Text>
@@ -36,7 +35,7 @@ const local = StyleSheet.create({
 		// shadowOffset: { height: 4, width: 4}
 	},
 	logArea: {
-		flex: 1,
+		// flex: 1,
 	},
 	logTimestamp: {
 		fontSize: 12,
