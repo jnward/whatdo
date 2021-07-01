@@ -30,7 +30,7 @@ export default function LogConsole(props) {
                                 value={newLogText}
                                 placeholder={'What have you been up to?'}
                                 placeholderTextColor="#B1B1B1"
-                                // enablesReturnKeyAutomatically
+                                enablesReturnKeyAutomatically
                                 multiline
                                 scrollEnabled={false}
                             />
@@ -61,7 +61,7 @@ const local = StyleSheet.create({
         borderColor: '#000',
         borderTopWidth: 2,
         padding: 20,
-        flexDirection: 'row'
+        flexDirection: 'row',
     },
     input: {
         minHeight: 33,

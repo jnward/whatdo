@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Alert, View, KeyboardAvoidingView, ScrollView, SafeAreaView, Text, TextInput, Button, AppState, AppStateStatus, AppStateStatic, StyleSheet, RecyclerViewBackedScrollViewBase } from 'react-native';
+import { FlatList, Alert, View, KeyboardAvoidingView, ScrollView, SafeAreaView, Text, TextInput, Button, AppState, AppStateStatus, AppStateStatic, StyleSheet, RecyclerViewBackedScrollViewBase } from 'react-native';
 import * as Linking from 'expo-linking';
 
 import { LinearGradient } from 'expo-linear-gradient';
@@ -344,7 +344,6 @@ export default function Home(props) {
     const setTheme = props.setTheme;
     // const startTime = props.startTime;
     // const setStartTime = props.setStartTime;
-    const [startTime, setStartTime] = useState();
 
     const style = styles[props.theme];
 
@@ -353,14 +352,14 @@ export default function Home(props) {
     const [noteState, setNoteState] = useState(false);
     const [logState, setLogState] = useState(false);
     const [logsData, setLogsData] = useState([]);
-    // const [startTime, setStartTime] = useState(12);
+    const [startTime, setStartTime] = useState();
     const [endTime, setEndTime] = useState(4);
     const [dummy, setDummy] = useState('');
     // const [theme, setTheme] = useState(props.theme);
     // const [logText, setLogText] = useState('');
 
     const _getLogData = () => {
-        const q = "select * from daily_log order by timestamp;"
+        const q = "select * from daily_log order by timestamp desc;"
         db.transaction(
             tx => { tx.executeSql(
                 q,
@@ -475,17 +474,19 @@ export default function Home(props) {
                         onPress={() => navigation.navigate('Settings', {
                             theme: theme,
                             startTime: startTime,
+                            endTime: endTime,
                             // updateTime: updateTime,
                         })}
                     />
                     <Text>{`${startTime}, ${endTime}`}</Text>
                 </SafeAreaView>
                 <View style={[style.container, local.container]}>
+
                     {logsData.length ? 
                         <ScrollView
                             ref={scrollViewRef}
                             onContentSizeChange={() => {
-                                scrollViewRef.current.scrollToEnd({ animated: true })
+                                scrollViewRef.current.scrollTo({ animated: true })
                             }}
                             >
                             <LogContainer logsData={logsData} theme={theme}/>
