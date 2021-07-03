@@ -14,7 +14,7 @@ export default function App() {
             <View style={styles.container}>
                 {/*<Application theme={theme} setTheme={setTheme}/>*/}
                 <RootStackScreen/>
-                <StatusBar style="auto" />
+                <StatusBar style="auto" hidden={false} />
             </View>
         </NavigationContainer>
     );

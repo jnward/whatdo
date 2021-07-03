@@ -17,7 +17,11 @@ import { db } from '../../utils/Database';
 
 import { styles } from '../../styles';
 import { requestPermissionsAsync } from 'expo-notifications';
-// TODO: ask perms for notifs
+
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+
+
 
 const EARLIEST_HOUR = 10;
 const LATEST_HOUR = 22;
@@ -356,6 +360,7 @@ export default function Home(props) {
     // const [theme, setTheme] = useState(props.theme);
     // const [logText, setLogText] = useState('');
     const scrollHeader = useRef(false);
+    const safeAreaInsetTop = useRef(useSafeAreaInsets().top);
 
     const scrollY = useRef(new Animated.Value(0));
     const ref = useRef();
@@ -403,7 +408,8 @@ export default function Home(props) {
     //     extrapolate: 'clamp',
     // });
 
-    const headerHeight = 350;
+    const headerHeight = 243 + safeAreaInsetTop.current;  //TODO: fix this
+    const footerHeight = 100;
 
     const clampedScrollY = scrollY.current.interpolate({
         inputRange: [0, headerHeight],
@@ -411,7 +417,7 @@ export default function Home(props) {
         extrapolateLeft: 'clamp'
     });
 
-    const scrollYClamped = Animated.diffClamp(clampedScrollY, 0, 300+headerHeight);
+    const scrollYClamped = Animated.diffClamp(clampedScrollY, 0, headerHeight);
     const translateY = scrollYClamped.interpolate({
         inputRange: [0, headerHeight],
         outputRange: [0, -headerHeight],
@@ -485,17 +491,20 @@ export default function Home(props) {
     // _getLogData();
     const scrollViewRef = useRef();
     const flatListRef = useRef();
-
+    console.log('ASDFASDFASDFASDF', safeAreaInsetTop.current);
 
     return (
-        <View style={{ flex:1, width: '100%' }}>
+        <View style={{ flex: 1, width: '100%' }}>
             <KeyboardAvoidingView
                 behavior='padding'
                 style={{ flex: 1 }}
             >
-                <SafeAreaView style={{flex: 1}}>
-                    {/* <View style={{overflow: 'hidden', height: headerHeight}}> */}
-                    <Animated.View style={[style.header, local.header, {justifyContent: 'center', transform: [{translateY}]}]}>
+                {/* <View style={{flex: 1}}> */}
+                    {/* <SafeAreaView style={{zIndex: 1, borderWidth: 2, borderColor: 'red'}}> */}
+                    {/* <View style={{flex: 1}}> */}
+                    <Animated.View style={[style.header, local.header, {flex: 1, borderWidth: 4, borderColor: 'pink', transform: [{translateY}]}]}>
+                        <View style={[style.header, {backgroundColor: 'green', height: safeAreaInsetTop.current}]}/>
+                        <View style={{flex: 1}}>
                         <Text>You've made it home.</Text>
 
                         <Button
@@ -504,7 +513,7 @@ export default function Home(props) {
                             color='red'
                         />
                         
-                        <Button
+                        {/* <Button
                             onPress={test}
                             title='Log scheduled notifications'
                             color='blue'
@@ -518,7 +527,7 @@ export default function Home(props) {
                             onPress={scheduleOldNote}
                             title='Schedule note one minute ago'
                             color='blue'
-                        />
+                        /> */}
                         <Button
                             onPress={schedule2SecondNote}
                             title='Schedule note two seconds from now'
@@ -556,11 +565,15 @@ export default function Home(props) {
                             })}
                         />
                         <Text>{`${startTime}, ${endTime}`}</Text>
+                        </View>
                     </Animated.View>
                     {/* </View> */}
+                    {/* </SafeAreaView> */}
                     {/* <Animated.View style={[style.container, local.container]}> */}
                         {/* {logsData.length ?  */}
+                        <View style={{position: 'absolute', width: '100%', flex: 1, height: '100%'}}>
                         <AnimatedFlatList
+                            style={[style.container, {flex: 1, borderWidth: 2, borderColor: 'yellow'}]}
                             ListHeaderComponent={<View style={{height: headerHeight}}/>}
                             scrollEventThrottle={16}
                             onScroll={handleScroll}
@@ -573,7 +586,7 @@ export default function Home(props) {
                                 flatListRef.current.scrollToOffset({ offset: 0, animated: true })
                             }}
                             data={logsData}
-                            // listEmptyComponent={() => {console.log('list empty'); return Log}}
+                            ListEmptyComponent={LogContainerPlaceholder}
                             // <Log key={logData.id} id={logData.id} body={logData.body} timestamp={logData.timestamp} theme={theme}/>
                             renderItem={({item, index, separators}) => (
                                 <Log
@@ -585,6 +598,15 @@ export default function Home(props) {
                                 />
                             )}
                             />
+                            <View style={[local.console, style.console]}>
+                                <LogConsole
+                                    handleNewLog={_newLog}
+                                    logState={logState}
+                                    noteState={noteState}
+                                    theme={theme}
+                                />
+                            </View>
+                        </View>
                         {/* /> : <LogContainerPlaceholder/> */}
                         {/* {logsData.length ? 
                             <ScrollView
@@ -602,15 +624,8 @@ export default function Home(props) {
                         style={local.linearGradient}
                     />*/}
                     {/* </Animated.View> */}
-                </SafeAreaView>
-                <View style={[style.console]}>
-                    <LogConsole
-                        handleNewLog={_newLog}
-                        logState={logState}
-                        noteState={noteState}
-                        theme={theme}
-                    />
-                </View>
+                {/* </View> */}
+
             </KeyboardAvoidingView>
         </View>
     );
@@ -658,7 +673,7 @@ const AppStateLogic = (props) => {
 
     const requestPermissions = () => Notifications.requestPermissionsAsync({
         ios: {
-            allowAlert: true,
+            allowAlert: true, // TODO
             allowBadge: true,
             allowSound: true,
             allowProvisional: true,
@@ -731,7 +746,14 @@ const local = StyleSheet.create({
         margin: 12,
         borderWidth: 1,
     },
+    console: {
+        // position: 'absolute',
+        width: '100%',
+        bottom: 0,
+        zIndex: 1,
+    },
     header: {
+        justifyContent: 'center',
         borderBottomWidth: 2,
         borderColor: '#000',
         position: 'absolute',
