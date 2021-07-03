@@ -13,12 +13,12 @@ export const styles = {
             backgroundColor: '#B2B2B2',
         },
         header: {
-            backgroundColor: '#43D2FF',
+            backgroundColor: '#a1e9ff',
         },
         headerGradient: {
         },
         console: {
-            backgroundColor: '#43D2FF7F',
+            backgroundColor: '#a1e9ff',
         },
         log: {
             backgroundColor: '#FFFFFF',

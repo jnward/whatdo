@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text, View, StyleSheet } from 'react-native';
 import { styles } from '../../../styles';
+import moment from 'moment';
 
 
 export default function Log(props) {
@@ -8,9 +9,12 @@ export default function Log(props) {
     const timestamp = props.timestamp;
     const theme = props.theme;
     const style = styles[theme];
+
+	const prettyTime = moment(timestamp).calendar();
+
     return (
     	<View style={{marginTop: 4}}>
-	        <Text style={[local.logTimestamp, style.logBody]}>{timestamp}</Text>
+	        <Text style={[local.logTimestamp, style.logBody]}>{prettyTime}</Text>
 	        <View style={local.logArea}>
 	        	<View style={[local.logShadow, style.logShadow]}>
 			    	<View style={[local.log, style.log]}>

@@ -502,8 +502,8 @@ export default function Home(props) {
                 {/* <View style={{flex: 1}}> */}
                     {/* <SafeAreaView style={{zIndex: 1, borderWidth: 2, borderColor: 'red'}}> */}
                     {/* <View style={{flex: 1}}> */}
-                    <Animated.View style={[style.header, local.header, {flex: 1, borderWidth: 4, borderColor: 'pink', transform: [{translateY}]}]}>
-                        <View style={[style.header, {backgroundColor: 'green', height: safeAreaInsetTop.current}]}/>
+                    <Animated.View style={[style.header, local.header, {flex: 1, transform: [{translateY}]}]}>
+                        <View style={[style.header, { height: safeAreaInsetTop.current }]}/>
                         <View style={{flex: 1}}>
                         <Text>You've made it home.</Text>
 
@@ -573,7 +573,7 @@ export default function Home(props) {
                         {/* {logsData.length ?  */}
                         <View style={{position: 'absolute', width: '100%', flex: 1, height: '100%'}}>
                         <AnimatedFlatList
-                            style={[style.container, {flex: 1, borderWidth: 2, borderColor: 'yellow'}]}
+                            style={[style.container, {flex: 1}]}
                             ListHeaderComponent={<View style={{height: headerHeight}}/>}
                             scrollEventThrottle={16}
                             onScroll={handleScroll}
